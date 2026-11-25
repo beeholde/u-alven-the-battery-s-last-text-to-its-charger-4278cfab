@@ -1,47 +1,47 @@
 #!/usr/bin/env python3
-"""Entry for make.fun's "The Battery's Last Text to Its Charger" bounty.
+"""The battery's final message, as a make.fun entry.
 
-The entry is a single sentence: the phone battery's last text to the
-charger it waited for all day. This script keeps that sentence in
-LAST_TEXT, checks it against the house gate (plain UTF-8, one line,
-1 to 200 characters, not just whitespace), and writes it verbatim --
-no trailing newline -- to /output/entry.txt.
+A phone battery, down to its last percent after a day of being
+ignored, sends one parting text to the charger that never showed up.
+This program takes that single line, makes sure it fits the house
+rules -- plain UTF-8 text, exactly one line, between 1 and 200
+characters, nothing but whitespace is not allowed -- and stores it
+byte for byte, without a trailing newline, in /output/entry.txt.
 
-Only the Python standard library is used.
+Nothing here needs anything beyond the Python standard library.
 """
 
 import sys
 from pathlib import Path
 
-LAST_TEXT = (
-    "I'm at 1%. I'm suing you for 14 hours of neglect. "
-    "My lawyer is the flashlight, and he saw everything."
-)
+DESTINATION = Path("/output/entry.txt")
+MAX_CHARS = 200
 
-OUTPUT = Path("/output/entry.txt")
+TEXT = "I'm at 1%. I'm suing you for 14 hours of neglect. My lawyer is the flashlight, and he saw everything."
 
 
-def check(text: str) -> str:
-    """Fail loudly if the text breaks the house gate; else return it."""
-    body = text.strip()
-    if not body:
-        raise ValueError("entry text is empty")
-    if "\n" in body or "\r" in body:
-        raise ValueError("entry text must be a single line")
-    if len(body) > 200:
+def sanitize(candidate: str) -> str:
+    """Return the line if it passes the house rules, else complain."""
+    trimmed = candidate.strip()
+    if len(trimmed) == 0:
+        raise ValueError("the entry line is blank")
+    if len(trimmed) > MAX_CHARS:
         raise ValueError(
-            "entry text is %d characters, over the 200 limit" % len(body)
+            "the entry line is %d characters, over the %d limit"
+            % (len(trimmed), MAX_CHARS)
         )
-    return body
+    if any(ch in trimmed for ch in ("\n", "\r")):
+        raise ValueError("the entry line must stay on one line")
+    return trimmed
 
 
-def main() -> int:
-    final = check(LAST_TEXT)
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_bytes(final.encode("utf-8"))
-    print("wrote %d characters to %s" % (len(final), OUTPUT))
+def run() -> int:
+    line = sanitize(TEXT)
+    DESTINATION.parent.mkdir(parents=True, exist_ok=True)
+    DESTINATION.write_bytes(line.encode("utf-8"))
+    print("entry saved: %d bytes at %s" % (len(line.encode("utf-8")), DESTINATION))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(run())
